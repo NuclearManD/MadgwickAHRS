@@ -36,11 +36,11 @@
 //-------------------------------------------------------------------------------------------
 // AHRS algorithm update
 
-double* H_product(double* A, double* B, double* dest) {
-	dest[0] = A[0]*B[0] - A[1]*B[1] - A[2]*B[2] - A[3]*B[3];
-	dest[1] = A[0]*B[1] + A[1]*B[0] + A[2]*B[3] - A[3]*B[2];
-	dest[2] = A[0]*B[2] - A[1]*B[3] + A[2]*B[0] + A[3]*B[1];
-	dest[3] = A[0]*B[2] + A[1]*B[2] - A[2]*B[1] + A[3]*B[0];
+double* H_product(double* q, double* r, double* dest) {
+	dest[0] = r[0]*q[0]-r[1]*q[1]-r[2]*q[2]-r[3]*q[3];
+	dest[1] = r[0]*q[1]+r[1]*q[0]-r[2]*q[3]+r[3]*q[2];
+	dest[2] = r[0]*q[2]+r[1]*q[3]+r[2]*q[0]-r[3]*q[1];
+	dest[3] = r[0]*q[3]-r[1]*q[2]+r[2]*q[1]+r[3]*q[0];
 	
 	return dest;
 }
@@ -60,6 +60,8 @@ void Madgwick::update(double gx, double gy, double gz, double ax, double ay, dou
 	double qDot1, qDot2, qDot3, qDot4;
 	double hx, hy;
 	double _2q0mx, _2q0my, _2q0mz, _2q1mx, _2bx, _2bz, _4bx, _4bz, _2q0, _2q1, _2q2, _2q3, _2q0q2, _2q2q3, q0q0, q0q1, q0q2, q0q3, q1q1, q1q2, q1q3, q2q2, q2q3, q3q3;
+
+	double accelQ[4] = {0, ax, ay, az};
 
 	// Use IMU algorithm if magnetometer measurement invalid (avoids NaN in magnetometer normalisation)
 	if((mx == 0.0f) && (my == 0.0f) && (mz == 0.0f)) {
@@ -149,13 +151,14 @@ void Madgwick::update(double gx, double gy, double gz, double ax, double ay, dou
 		q3 *= recipNorm;
 		anglesComputed = 0;
 	}
-
-	double accelQ[4] = {0, ax, ay, az};
+	
 	double rotQ[4]   = {q0, q1, q2, q3};
 	double rotNQ[4]  = {q0, -q1, -q2, -q3};
+	double intermediate[4];
 	double output[4];
 	
-	H_product(H_product(rotQ, accelQ, output), rotNQ, output);
+	H_product(rotQ, accelQ, intermediate);
+	H_product(intermediate, rotNQ, output);
 	
 	accelx = output[1];
 	accely = output[2];
