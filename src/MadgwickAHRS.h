@@ -24,7 +24,6 @@ class Madgwick{
 private:
     static double invSqrt(double x);
     double beta;				// algorithm gain
-    double invSampleFreq;
     double roll;
     double pitch;
     double yaw;
@@ -35,9 +34,8 @@ private:
 // Function declarations
 public:
     Madgwick(void);
-    void begin(double sampleFrequency) { invSampleFreq = 1.0f / sampleFrequency; }
-    void update(double gx, double gy, double gz, double ax, double ay, double az, double mx, double my, double mz);
-    void updateIMU(double gx, double gy, double gz, double ax, double ay, double az);
+    void update(double gx, double gy, double gz, double ax, double ay, double az, double mx, double my, double mz, double deltat);
+    void updateIMU(double gx, double gy, double gz, double ax, double ay, double az, double deltat);
     //double getPitch(){return atan2f(2.0f * q2 * q3 - 2.0f * q0 * q1, 2.0f * q0 * q0 + 2.0f * q3 * q3 - 1.0f);};
     //double getRoll(){return -1.0f * asinf(2.0f * q1 * q3 + 2.0f * q0 * q2);};
     //double getYaw(){return atan2f(2.0f * q1 * q2 - 2.0f * q0 * q3, 2.0f * q0 * q0 + 2.0f * q1 * q1 - 1.0f);};

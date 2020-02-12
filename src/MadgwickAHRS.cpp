@@ -51,11 +51,10 @@ Madgwick::Madgwick() {
 	q1 = 0.0f;
 	q2 = 0.0f;
 	q3 = 0.0f;
-	invSampleFreq = 1.0f / sampleFreqDef;
 	anglesComputed = 0;
 }
 
-void Madgwick::update(double gx, double gy, double gz, double ax, double ay, double az, double mx, double my, double mz) {
+void Madgwick::update(double gx, double gy, double gz, double ax, double ay, double az, double mx, double my, double mz, double deltat) {
 	double recipNorm;
 	double s0, s1, s2, s3;
 	double qDot1, qDot2, qDot3, qDot4;
@@ -64,13 +63,8 @@ void Madgwick::update(double gx, double gy, double gz, double ax, double ay, dou
 
 	// Use IMU algorithm if magnetometer measurement invalid (avoids NaN in magnetometer normalisation)
 	if((mx == 0.0f) && (my == 0.0f) && (mz == 0.0f)) {
-		updateIMU(gx, gy, gz, ax, ay, az);
+		updateIMU(gx, gy, gz, ax, ay, az, deltat);
 	} else {
-
-		// Convert gyroscope degrees/sec to radians/sec
-		/*gx *= 0.0174533f;
-		gy *= 0.0174533f;
-		gz *= 0.0174533f;*/
 
 		// Rate of change of quaternion from gyroscope
 		qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
@@ -142,10 +136,10 @@ void Madgwick::update(double gx, double gy, double gz, double ax, double ay, dou
 		}
 
 		// Integrate rate of change of quaternion to yield quaternion
-		q0 += qDot1 * invSampleFreq;
-		q1 += qDot2 * invSampleFreq;
-		q2 += qDot3 * invSampleFreq;
-		q3 += qDot4 * invSampleFreq;
+		q0 += qDot1 * deltat;
+		q1 += qDot2 * deltat;
+		q2 += qDot3 * deltat;
+		q3 += qDot4 * deltat;
 
 		// Normalise quaternion
 		recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
@@ -171,16 +165,11 @@ void Madgwick::update(double gx, double gy, double gz, double ax, double ay, dou
 //-------------------------------------------------------------------------------------------
 // IMU algorithm update
 
-void Madgwick::updateIMU(double gx, double gy, double gz, double ax, double ay, double az) {
-	double recipNorm;
-	double s0, s1, s2, s3;
-	double qDot1, qDot2, qDot3, qDot4;
-	double _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 ,_8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
-
-	// Convert gyroscope degrees/sec to radians/sec
-	/*gx *= 0.0174533f;
-	gy *= 0.0174533f;
-	gz *= 0.0174533f;*/
+void Madgwick::updateIMU(double gx, double gy, double gz, double ax, double ay, double az, double deltat) {
+	float recipNorm;
+	float s0, s1, s2, s3;
+	float qDot1, qDot2, qDot3, qDot4;
+	float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 ,_8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
 
 	// Rate of change of quaternion from gyroscope
 	qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
@@ -231,10 +220,10 @@ void Madgwick::updateIMU(double gx, double gy, double gz, double ax, double ay, 
 	}
 
 	// Integrate rate of change of quaternion to yield quaternion
-	q0 += qDot1 * invSampleFreq;
-	q1 += qDot2 * invSampleFreq;
-	q2 += qDot3 * invSampleFreq;
-	q3 += qDot4 * invSampleFreq;
+	q0 += qDot1 * deltat;
+	q1 += qDot2 * deltat;
+	q2 += qDot3 * deltat;
+	q3 += qDot4 * deltat;
 
 	// Normalise quaternion
 	recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
@@ -250,11 +239,11 @@ void Madgwick::updateIMU(double gx, double gy, double gz, double ax, double ay, 
 // See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
 
 double Madgwick::invSqrt(double x) {
-	double halfx = 0.5f * x;
-	double y = x;
+	float halfx = 0.5f * (float)x;
+	float y = (float)x;
 	long i = *(long*)&y;
 	i = 0x5f3759df - (i>>1);
-	y = *(double*)&i;
+	y = *(float*)&i;
 	y = y * (1.5f - (halfx * y * y));
 	y = y * (1.5f - (halfx * y * y));
 	return y;
@@ -264,9 +253,9 @@ double Madgwick::invSqrt(double x) {
 
 void Madgwick::computeAngles()
 {
-	roll = atan2f(q0*q1 + q2*q3, 0.5f - q1*q1 - q2*q2);
-	pitch = asinf(-2.0f * (q1*q3 - q0*q2));
-	yaw = atan2f(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3);
+	roll = atan2(q0*q1 + q2*q3, 0.5f - q1*q1 - q2*q2);
+	pitch = asin(-2.0f * (q1*q3 - q0*q2));
+	yaw = atan2(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3);
 	anglesComputed = 1;
 }
 
